@@ -1,0 +1,37 @@
+backend:
+  name: github
+  repo: kovelwebic-ops/cms-test
+  branch: main
+
+site_url: https://kovelwebic-ops.github.io/cms-test/
+media_folder: images
+public_folder: /cms-test/images
+
+media_libraries:
+  default:
+    config:
+      transformations:
+        raster_image:
+          format: webp
+          quality: 85
+          width: 1600
+          height: 1600
+
+collections:
+  - name: catalog
+    label: Каталог
+    files:
+      - name: services
+        label: Послуги та товари
+        file: data/services.json
+        fields:
+          - name: items
+            label: Позиції
+            label_singular: Позиція
+            widget: list
+            summary: "{{fields.title}}"
+            fields:
+              - { name: title, label: Назва, widget: string }
+              - { name: description, label: Опис, widget: text, required: false }
+              - { name: photo, label: Фото, widget: image, required: false }
+              - { name: video, label: Посилання на YouTube, widget: string, required: false }

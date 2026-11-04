@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Тест панелі</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; color: #222; background: #fff; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .card h2 { margin: 0 0 8px; font-size: 20px; }
+    .card p { margin: 0; white-space: pre-line; }
+    .card img, .card iframe { display: block; width: 100%; border: 0; border-radius: 6px; margin-top: 12px; }
+    .card iframe { aspect-ratio: 16 / 9; }
+    .muted { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Тест панелі</h1>
+  <p><a href="admin/">Відкрити панель</a></p>
+  <div id="list"><p class="muted">Завантаження…</p></div>
+
+  <script>
+    const list = document.getElementById('list');
+
+    function youtubeId(url) {
+      const match = String(url || '').match(
+        /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/
+      );
+      return match ? match[1] : null;
+    }
+
+    function el(tag, props = {}) {
+      return Object.assign(document.createElement(tag), props);
+    }
+
+    // Shows the served size of a photo, so the compression check needs no dev tools.
+    async function showPhotoSize(src, target) {
+      try {
+        const response = await fetch(src, { method: 'HEAD', cache: 'no-store' });
+        const bytes = Number(response.headers.get('content-length'));
+        if (bytes) target.textContent = `Вага фото: ${Math.round(bytes / 1024)} КБ`;
+      } catch {
+        // The size line is only a test aid, so a failed check can stay blank.
+      }
+    }
+
+    function renderItem(item) {
+      const card = el('article', { className: 'card' });
+      card.append(el('h2', { textContent: item.title || 'Без назви' }));
+      if (item.description) card.append(el('p', { textContent: item.description }));
+
+      if (item.photo) {
+        card.append(el('img', { src: item.photo, alt: item.title || '', loading: 'lazy' }));
+        const size = el('div', { className: 'muted' });
+        card.append(size);
+        showPhotoSize(item.photo, size);
+      }
+
+      const videoId = youtubeId(item.video);
+      if (videoId) {
+        card.append(el('iframe', {
+          src: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`,
+          title: item.title || 'Відео',
+          allowFullscreen: true,
+          loading: 'lazy',
+        }));
+      } else if (item.video) {
+        card.append(el('p', { className: 'muted', textContent: 'Не вдалося розпізнати посилання на відео.' }));
+      }
+      return card;
+    }
+
+    async function load() {
+      try {
+        // GitHub Pages caches files for about 10 minutes; the timestamp skips that cache.
+        const response = await fetch(`data/services.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const { items = [] } = await response.json();
+        list.replaceChildren(...items.map(renderItem));
+        if (!items.length) list.append(el('p', { className: 'muted', textContent: 'Поки немає жодної позиції.' }));
+      } catch (error) {
+        list.replaceChildren(el('p', { textContent: `Не вдалося завантажити список: ${error.message}` }));
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
